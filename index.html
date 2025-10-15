@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Epic Life — Event Search</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      font-weight: 300;
+      margin-bottom: 24px;
+    }
+    .row {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.9em;
+      color: #555;
+    }
+    input[type="text"],
+    input[type="date"],
+    select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .buttons {
+      text-align: center;
+      margin-top: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+    .terms {
+      margin-top: 16px;
+      font-size: 0.8em;
+      text-align: center;
+    }
+    .results {
+      margin-top: 24px;
+    }
+    .event {
+      border-top: 1px solid #ddd;
+      padding: 12px 0;
+    }
+    .event:first-of-type {
+      border-top: none;
+    }
+    .event-title {
+      font-weight: bold;
+    }
+    .event-meta {
+      font-size: 0.9em;
+      color: #555;
+    }
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Epic Life</h1>
+    <div class="row">
+      <label for="locCity">City / State</label>
+      <input type="text" id="locCity" placeholder="e.g. Philadelphia, PA" list="citiesList" />
+      <datalist id="citiesList">
+        <!-- you can populate with a fixed list of major US cities + states -->
+        <option value="Philadelphia, PA">
+        <option value="New York, NY">
+        <option value="Los Angeles, CA">
+        <option value="Chicago, IL">
+        <option value="Houston, TX">
+        <!-- etc -->
+      </datalist>
+    </div>
+    <div class="row">
+      <label for="dateFrom">Date From</label>
+      <input type="date" id="dateFrom" />
+    </div>
+    <div class="row">
+      <label for="dateTo">Date To</label>
+      <input type="date" id="dateTo" />
+    </div>
+    <div class="row">
+      <label for="eventName">Name / Keyword</label>
+      <input type="text" id="eventName" placeholder="Search by event name or keyword" />
+    </div>
+    <div class="row">
+      <label for="theme">Theme</label>
+      <select id="theme">
+        <option value="">-- any theme --</option>
+        <option value="academic">Academic</option>
+        <option value="business">Business</option>
+        <option value="social">Social</option>
+        <option value="political">Political</option>
+      </select>
+    </div>
+    <div class="buttons">
+      <button id="btnSearch">Search</button>
+      <button id="btnClear">Clear</button>
+    </div>
+    <div class="terms">
+      <select id="tosSelect">
+        <option>Terms of Service</option>
+        <option>
+          Epic Life does not store personal data. Results are drawn from publicly
+          available listings and are not guaranteed accurate.
+        </option>
+      </select>
+    </div>
+    <div class="results" id="results">
+      <!-- results will go here -->
+    </div>
+  </div>
+
+  <script>
+    // Helper: format date as YYYY-MM-DD
+    function formatDate(d) {
+      if (!d) return "";
+      const dt = new Date(d);
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const day = String(dt.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    document.getElementById("btnSearch").onclick = async function() {
+      const cityState = document.getElementById("locCity").value.trim();
+      const dateFrom = document.getElementById("dateFrom").value;
+      const dateTo = document.getElementById("dateTo").value;
+      const name = document.getElementById("eventName").value.trim();
+      const theme = document.getElementById("theme").value;
+
+      // Minimal validation
+      if (!cityState && !name && !theme && !dateFrom && !dateTo) {
+        alert("Please enter at least one search filter.");
+        return;
+      }
+
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (cityState) params.set("location", cityState);
+      if (dateFrom) params.set("start_date", formatDate(dateFrom));
+      if (dateTo) params.set("end_date", formatDate(dateTo));
+      if (name) params.set("name", name);
+      if (theme) params.set("theme", theme);
+
+      // This is a placeholder API — you must replace with a real event API or serverless function
+      const apiUrl = "https://your-proxy-or-api.example.com/search?" + params.toString();
+
+      try {
+        const resp = await fetch(apiUrl);
+        const result = await resp.json();
+        const events = result.events || [];
+        showResults(events);
+      } catch (err) {
+        console.error("Search error:", err);
+        document.getElementById("results").innerHTML =
+          "<p>Unable to fetch events. Try again later.</p>";
+      }
+    };
+
+    document.getElementById("btnClear").onclick = function() {
+      document.getElementById("locCity").value = "";
+      document.getElementById("dateFrom").value = "";
+      document.getElementById("dateTo").value = "";
+      document.getElementById("eventName").value = "";
+      document.getElementById("theme").value = "";
+      document.getElementById("results").innerHTML = "";
+    };
+
+    function showResults(events) {
+      const container = document.getElementById("results");
+      container.innerHTML = "";
+      if (!events.length) {
+        container.innerHTML = "<p>No events found.</p>";
+        return;
+      }
+      for (let ev of events) {
+        const div = document.createElement("div");
+        div.className = "event";
+        const title = document.createElement("div");
+        title.className = "event-title";
+        title.innerHTML = `<a href="${ev.url}" target="_blank">${ev.name}</a>`;
+        const meta = document.createElement("div");
+        meta.className = "event-meta";
+        meta.textContent =
+          `${ev.theme || ""} — ${ev.date || ""} ${ev.time || ""} — ${ev.location || ""}`;
+        div.appendChild(title);
+        div.appendChild(meta);
+        container.appendChild(div);
+      }
+    }
+  </script>
+</body>
+</html>
